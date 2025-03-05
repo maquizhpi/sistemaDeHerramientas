@@ -9,6 +9,8 @@ import { Herramienta, ResponseData } from "../../../models";
 import HttpClient from "../../../controllers/utils/http_client";
 import { useState } from "react";
 import { UploadSolicitudeImages } from "../../../controllers/utils/upload_solicitude_images";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { storage } from "../../../controllers/firebase/config";
 
 export const HerramientasCreate = () => {
   const { auth } = useAuth();
@@ -31,18 +33,6 @@ export const HerramientasCreate = () => {
     calibracion: "",
   });
 
-  const uploadImage = async (file: File) => {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-    });
-
-    return response.json(); // Devuelve la URL del archivo guardado localmente
-  };
-
   const formik = useFormik<Herramienta>({
     enableReinitialize: true,
     validateOnMount: true,
@@ -50,40 +40,62 @@ export const HerramientasCreate = () => {
     validateOnChange: true,
     initialValues,
     onSubmit: async (formData) => {
-      const imagen = image ?? formData?.imagen;
-      const facutureItems = await UploadSolicitudeImages(image);
-      const data = { ...formData, facutureItems };
-
       setLoading(true);
 
-      console.log(data);
-
-      if (formData.nombre === "") {
-        toast.warning("Ingrese el nombre de la herramienta");
+      if (!image) {
+        toast.warning("Por favor, selecciona una imagen antes de guardar.");
+        setLoading(false);
         return;
       }
 
-      if (formData.tipo === "") {
-        toast.warning("Ingrese el tipo de la herramienta");
-        return;
-      }
+      // Referencia en Firebase Storage
+      const storageRef = ref(storage, `herramientas/${image.name}`);
+      const uploadTask = uploadBytesResumable(storageRef, image);
 
-     // const response: ResponseData = await HttpClient(
-     //   `/api/herramientas`,
-     //   "POST",
-     //   auth.usuario,
-     //   auth.rol,
-     //   formData
-     // );
-//
-     // if (response.success) {
-     //   toast.success("Producto creado correctamente!");
-     //   Router.back();
-     // } else {
-     //   toast.warning(response.message);
-     // }
-//
-     // setLoading(false);
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          const progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log(`Upload is ${progress}% done`);
+        },
+        (error) => {
+          console.error("Error subiendo la imagen:", error);
+          toast.error("Hubo un error al subir la imagen.");
+          setLoading(false);
+        },
+        async () => {
+          // Obtener la URL de la imagen subida
+          const imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
+          console.log("File available at", imageUrl);
+
+          // Agregar la URL al formulario
+          const newData = { ...formData, imagen: imageUrl };
+
+          // Enviar los datos al backend
+          try {
+            const response = await HttpClient(
+              `/api/herramientas`,
+              "POST",
+              auth.usuario,
+              auth.rol,
+              newData
+            );
+
+            if (response.success) {
+              toast.success("Herramienta creada correctamente!");
+              Router.back();
+            } else {
+              toast.warning(response.message);
+            }
+          } catch (error) {
+            console.error("Error al guardar la herramienta:", error);
+            toast.error("Error al guardar la herramienta.");
+          }
+
+          setLoading(false);
+        }
+      );
     },
   });
 

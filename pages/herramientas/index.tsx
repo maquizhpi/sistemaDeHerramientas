@@ -33,6 +33,7 @@ export const HerramientasPage = () => {
       auth.rol
     );
     const herramientas: Array<Herramienta> = response.data ?? [];
+    console.log(herramientas);
     setTableData(herramientas);
     setLoading(false);
   };
@@ -171,6 +172,13 @@ export const HerramientasPage = () => {
       CheckPermissions(auth, [0])
         ? showConfirmModal(rowData.id)
         : toast.error("No puedes eliminar una Solicitud");
+    },
+    show: (rowData: Herramienta) => {
+      if (rowData.imagen) {
+        window.open(rowData.imagen, "_blank");
+      } else {
+        toast.warning("No hay imagen disponible para esta herramienta");
+      }
     },
   };
 

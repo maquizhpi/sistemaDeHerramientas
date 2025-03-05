@@ -1,5 +1,5 @@
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import firebaseApp from "./config";
+import  { firebaseApp } from "./config";
 
 const uploadFile = async (file: File): Promise<string> => {
   if (file === null) return
