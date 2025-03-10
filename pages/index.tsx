@@ -79,7 +79,7 @@ export default function Home() {
             <div className="bg-white w-full rounded-xl shadow-2xl p-8 mb-8">
               <div className="flex items-center mb-8">
                 <p className="text-3xl text-center text-blue-800 font-bold w-full">
-                  <strong>Sistema de Gestión de Herramientassssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss</strong>
+                  <strong>Sistema de Gestión de Herramientas</strong>
                 </p>
                 <hr className="mt-4 mb-6 border-t-2 border-blue-300" />
               </div>
